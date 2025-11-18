@@ -5,54 +5,84 @@ import '../scss/styles.scss'
 // Eindoefening — Rekenmachine (Windows-stijl)
 // -----------------------------------------
 
-async function loadLocalUsers() {
-    const body = document.querySelector(".row.g-4")
+
+
+async function loadPost() {
+    const status = document.getElementById("ex3_status");
+    const postCard = document.getElementById("ex3_post_card");
+    const commentsCard = document.getElementById("ex3_comments_card");
+
+    const titleEl = document.getElementById("ex3_title");
+    const bodyEl = document.getElementById("ex3_body");
+
+    const commentsList = document.getElementById("ex3_comments_list");
+    const emptyComments = document.getElementById("ex3_comments_empty");
+
+    const id = parseInt(document.getElementById("ex3_post_id").value);
+
+
+    if (!id || id < 1) {
+        status.className = "alert alert-warning mb-3";
+        status.textContent = "⚠️ Gelieve een geldig ID in te vullen.";
+        return;
+    }
 
     try {
+        // Loading melding
+        status.className = "alert alert-warning mb-3";
+        status.textContent = "⏳ Post en comments laden...";
 
+        // Vorige content verbergen
+        postCard.classList.add("d-none");
+        commentsCard.classList.add("d-none");
+        commentsList.innerHTML = "";
+        emptyComments.classList.remove("d-none");
 
-        const res = await fetch("https://pokeapi.co/api/v2/pokemon?limit=20");
-        if (!res.ok) throw new Error("Fout bij laden JSON");
+        // API calls parallel
+        const postReq = fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
+        const commentsReq = fetch(`https://jsonplaceholder.typicode.com/comments?postId=${id}`);
 
-        const data = await res.json();
-        const item = data.results;
+        const [postRes, commentsRes] = await Promise.all([postReq, commentsReq]);
 
-        body.innerHTML = item
-            .map(p => `<div class="col">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-header bg-primary text-white text-center">
-                    ${p.name}
-                </div>
-                <img
-                        src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png"
-                        class="card-img-top p-3"
-                        alt="Bulbasaur"
-                >
-                <div class="card-body">
-                    <h5 class="card-title text-center">#001</h5>
-                    <ul class="list-group small">
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Type</span><span>Grass / Poison</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Hoogte</span><span>0.7 m</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Gewicht</span><span>6.9 kg</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>`)
-            .join("");
+        if (!postRes.ok) throw new Error("Post niet gevonden");
 
+        const post = await postRes.json();
+        const comments = await commentsRes.json();
 
+        // Post tonen
+        titleEl.textContent = post.title;
+        bodyEl.textContent = post.body;
+        postCard.classList.remove("d-none");
 
-    } catch(err) {
+        // Comments tonen
+        if (comments.length > 0) {
+            commentsList.innerHTML = comments
+                .map(c => `
+                    <li class="list-group-item">
+                        <strong>${c.name}</strong><br>
+                        <small class="text-muted">${c.email}</small><br>
+                        ${c.body}
+                    </li>
+                `)
+                .join("");
 
+            emptyComments.classList.add("d-none");
+        }
+
+        commentsCard.classList.remove("d-none");
+
+        // Succes
+        status.className = "alert alert-success mb-3";
+        status.textContent = "✓ Post en comments succesvol geladen";
+
+    } catch (err) {
+        status.className = "alert alert-danger mb-3";
+        status.textContent = "❌ Fout bij het laden van de data";
     }
 }
 
+
 document.addEventListener("DOMContentLoaded", () => {
-    loadLocalUsers();
+    document.getElementById("ex3_btn")
+        ?.addEventListener("click", loadPost);
 });
